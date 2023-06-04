@@ -1,0 +1,26 @@
+name: Quality assurance
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '**.py'
+      - '**.js'
+      - '**.html'
+      - '**.css'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v3
+      with:
+        python-version: '3.11'
+    - name: Install dependencies
+      run: |
+        pip install --no-compile --disable-pip-version-check -r requirements.txt -r requirements-dev.txt
+    - name: Analysing the code with pylint (minimum score is set to 9.7)
+      run: |
+        pylint $(git ls-files '*.py') --fail-under 9.7

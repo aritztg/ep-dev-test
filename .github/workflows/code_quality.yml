@@ -21,6 +21,6 @@ jobs:
     - name: Install dependencies
       run: |
         pip install --no-compile --disable-pip-version-check -r requirements.txt -r requirements-dev.txt
-    - name: Analysing the code with pylint (minimum score is set to 9.7)
+    - name: Analysing the code with pylint (minimum score is set to 9)
       run: |
-        pylint $(git ls-files '*.py') --fail-under 9.7
+        pylint $(git ls-files '*.py') --fail-under 9

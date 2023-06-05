@@ -1,5 +1,7 @@
 # EP Dev Test
 
+![ci workflow](https://github.com/aritztg/ep-dev-test/actions/workflows/code_quality.yml/badge.svg)
+
 ## Installation
 
 This guide assumes that the reader has a minimal experience with python and its virtualenvs.

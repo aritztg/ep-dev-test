@@ -25,8 +25,6 @@ app = FastAPI(title='EarthPulse simple API', description='Satellite image reader
 
 async def check_token(csrf_token: str) -> bool:
     """Utility function to check CSRF validity against an environment predefined constant."""
-    print(csrf_token, type(csrf_token))
-    print(getenv('VALID_CSRF_TOKEN'))
     if str(csrf_token) != getenv('VALID_CSRF_TOKEN'):
         raise HTTPException(status_code=403, detail='Unauthorised. Invalid CSRF Token.')
 

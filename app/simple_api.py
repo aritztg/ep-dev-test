@@ -31,6 +31,10 @@ async def check_token(csrf_token: str) -> bool:
     return True
 
 async def open_input_image(image: UploadFile) -> rasterio.io.DatasetReader:
+    """Ensure the uploaded file can be opened as a raster image.
+
+    If successful, it returns the rasterio object, it raises an error otherwise.
+    """
     try:
         return rasterio.open(image.file)
     except Exception as exc:
@@ -40,6 +44,7 @@ async def open_input_image(image: UploadFile) -> rasterio.io.DatasetReader:
 @app.post(ATTRIBUTES_PATH)
 async def attributes(csrf_token: Annotated[str, Depends(check_token)],  # pylint: disable=W0613
                      image: UploadFile) -> Response:
+    """Opens a received image and returns some basic metadata."""
     # Read input file.
     raster = await open_input_image(image)
 
@@ -60,6 +65,10 @@ async def attributes(csrf_token: Annotated[str, Depends(check_token)],  # pylint
 @app.post(THUMBNAILS_PATH)
 async def thumbnailer(csrf_token: Annotated[str, Depends(check_token)],  # pylint: disable=W0613
                       image: UploadFile) -> Response:
+    """Opens a received image and generates a thumbnail.
+
+    It normalises each RGB band. Output size is hardcoded for now.
+    """
     # Read input file.
     raster = await open_input_image(image)
 
@@ -82,6 +91,12 @@ async def thumbnailer(csrf_token: Annotated[str, Depends(check_token)],  # pylin
 @app.post(NDVI_PATH)
 async def ndvi(csrf_token: Annotated[str, Depends(check_token)],  # pylint: disable=W0613
                image: UploadFile) -> Response:
+    """Returns a computed NDVI out of an uploaded image.
+
+    In order to render the output image with a channel map, Matplotlib will be used. This is not ideal as the
+    render works towards a virtual paper sheet medium using a GUI utility. Usually that utility would add some
+    borders to the generated image, but this has been avoided with some extra steps.
+    """
     # Read input file.
     raster = await open_input_image(image)
 

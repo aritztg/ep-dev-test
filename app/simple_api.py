@@ -7,7 +7,7 @@ import numpy as np
 import rasterio
 import uvicorn
 from dotenv import load_dotenv
-from fastapi import Depends, FastAPI, HTTPException, Response, UploadFile
+from fastapi import Depends, FastAPI, HTTPException, Query, Response, UploadFile
 from PIL import Image
 from utils import brighten, normalize
 
@@ -18,6 +18,9 @@ load_dotenv()
 ATTRIBUTES_PATH = '/attributes/'
 THUMBNAILS_PATH = '/thumbnails/'
 NDVI_PATH = '/ndvi/'
+
+VALID_CMAPS = plt.colormaps()
+VALID_THUMBNAIL_SIZES = {f'{size}x{size}': (size, size) for size in [64, 128, 256, 512, 1024]}
 
 # App handler.
 app = FastAPI(title='EarthPulse simple API', description='Satellite image reader and converter.')
@@ -64,7 +67,8 @@ async def attributes(csrf_token: Annotated[str, Depends(check_token)],  # pylint
 
 @app.post(THUMBNAILS_PATH)
 async def thumbnailer(csrf_token: Annotated[str, Depends(check_token)],  # pylint: disable=W0613
-                      image: UploadFile) -> Response:
+                      image: UploadFile,
+                      size: str = Query('256x256', enum=list(VALID_THUMBNAIL_SIZES.keys()))) -> Response:
     """Opens a received image and generates a thumbnail.
 
     It normalises each RGB band. Output size is hardcoded for now.
@@ -82,7 +86,8 @@ async def thumbnailer(csrf_token: Annotated[str, Depends(check_token)],  # pylin
 
     # Resize and write to png (io).
     # This will loose its proportions from WSG84 crs. It should be enough for now.
-    img = img.resize((256,256))
+    selected_size_tuple = VALID_THUMBNAIL_SIZES[size]
+    img = img.resize(selected_size_tuple)
 
     with io.BytesIO() as output:
         img.save(output, format='PNG')
@@ -90,7 +95,8 @@ async def thumbnailer(csrf_token: Annotated[str, Depends(check_token)],  # pylin
 
 @app.post(NDVI_PATH)
 async def ndvi(csrf_token: Annotated[str, Depends(check_token)],  # pylint: disable=W0613
-               image: UploadFile) -> Response:
+               image: UploadFile,
+               cmap: str = Query('RdYlGn', enum=VALID_CMAPS)) -> Response:
     """Returns a computed NDVI out of an uploaded image.
 
     In order to render the output image with a channel map, Matplotlib will be used. This is not ideal as the
@@ -113,7 +119,11 @@ async def ndvi(csrf_token: Annotated[str, Depends(check_token)],  # pylint: disa
     axes.set_axis_off()
     figure.add_axes(axes)
 
-    axes.imshow(ndvi_array, cmap='RdYlGn', aspect='auto')
+    try:
+        axes.imshow(ndvi_array, cmap=cmap, aspect='auto')
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=f'Invalid cmap value. {exc}') from exc
+
     figure.savefig(output_buffer, format='png', dpi=200)
     plt.close(figure)
 
